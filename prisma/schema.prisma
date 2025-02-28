@@ -1,0 +1,44 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Item {
+  id        Int     @id @default(autoincrement())
+  barcode   String?  @unique
+  title     String
+  note      String?
+  price     Float
+  inventory Int?
+  quickItem Boolean  @default(false)
+  imageUrl  String?  // URL or file path for the item image
+  transactions TransactionItem[]
+}
+
+model Transaction {
+  id            Int                @id @default(autoincrement())
+  createdAt     DateTime           @default(now())
+  total         Float
+  tax           Float
+  paymentMethod String
+  status        String             @default("COMPLETED") // New status field
+  receiptId     String?            @unique // For reprint tracking
+  items         TransactionItem[]
+}
+
+model TransactionItem {
+  id            Int          @id @default(autoincrement())
+  quantity      Int
+  price         Float
+  title         String
+  barcode       String?
+  voided        Boolean      @default(false)
+  item          Item?        @relation(fields: [itemId], references: [id])
+  itemId        Int?
+  transaction   Transaction  @relation(fields: [transactionId], references: [id])
+  transactionId Int
+}
