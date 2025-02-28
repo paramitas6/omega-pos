@@ -61,24 +61,28 @@ export async function POST(req: NextRequest) {
 
 
 
+// src/app/api/items/route.ts
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const id = searchParams.get("id");
-  const barcode = searchParams.get("barcode");
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    const barcode = searchParams.get("barcode");
 
-  if (id) {
-    const item = await db.item.findUnique({
-      where: { id: Number(id) },
-    });
-    return NextResponse.json(item);
-  } else if (barcode) {
-    const item = await db.item.findUnique({
-      where: { barcode },
-    });
-    return NextResponse.json(item);
-  } else {
-    const items = await db.item.findMany();
-    return NextResponse.json(items);
+    if (id) {
+      const item = await db.item.findUnique({ where: { id: Number(id) } });
+      return NextResponse.json(item);
+    } else if (barcode) {
+      const item = await db.item.findUnique({ where: { barcode } });
+      return NextResponse.json(item);
+    } else {
+      const items = await db.item.findMany();
+      return NextResponse.json(items);
+    }
+  } catch (error) {
+    console.error("Error fetching items:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
-

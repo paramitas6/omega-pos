@@ -169,6 +169,24 @@ export default function Cashier() {
     });
   };
 
+  const handleOpenCashDrawer = async () => {
+    try {
+      const response = await fetch("http://localhost:7070/open/cash-drawer", {
+        method: "POST",
+        headers: {
+          "x-api-key": "pos-gamja", // Match your server API key
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to open drawer");
+      toast.success("Cash drawer opened");
+    } catch (error) {
+      console.error("Cash drawer error:", error);
+      toast.error("Failed to open cash drawer");
+    }
+  };
+
   // Handler for adding quick add items
   const handleQuickAdd = (item: Item) => {
     setCart((prevCart) => {
@@ -639,6 +657,8 @@ export default function Cashier() {
             </PopoverContent>
           </Popover>
 
+
+
           {/* Tax-Included Item Button */}
           <Popover
             open={openTaxIncludedItem}
@@ -687,6 +707,16 @@ export default function Cashier() {
               </div>
             </PopoverContent>
           </Popover>
+                    {/* Add Cash Drawer Button Here */}
+                    <button
+            onClick={handleOpenCashDrawer}
+            className="w-full p-4 text-center rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors border-2 border-blue-100"
+          >
+            <div className="font-medium text-xl text-blue-800">
+              Open Cash Drawer
+            </div>
+            <div className="text-sm text-blue-600">Manual drawer release</div>
+          </button>
         </div>
       </div>
     </div>
