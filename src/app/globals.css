@@ -3,7 +3,27 @@
 @tailwind utilities;
 
 
+/* @keyframes paw {
+  0% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(0.9) rotate(-10deg); }
+  60% { transform: scale(1.1) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
 
+.animate-paw {
+  animation: paw 0.3s ease-in-out;
+} */
+
+@keyframes paw {
+  0% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(0.8) rotate(-15deg); }
+  60% { transform: scale(1.2) rotate(15deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.animate-paw {
+  animation: paw 0.5s cubic-bezier(0.4, 0, 0.6, 1);
+}
 @layer base {
   :root {
 

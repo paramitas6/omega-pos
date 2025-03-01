@@ -47,7 +47,7 @@ export default function ManagerLayout({
           alt="Decorative cat"
           width={240}
           height={240}
-          className="absolute bottom-8  w-72 rotate-12 opacity-80 hover:rotate-45 transition-transform duration-500"
+          className="absolute bottom-8 left-0  w-72 rotate-12 opacity-80 hover:rotate-45 transition-transform duration-500"
         />
         
         <div className="absolute top-1/2 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent" />

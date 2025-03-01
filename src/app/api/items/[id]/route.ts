@@ -1,48 +1,59 @@
 // src/app/api/items/[id]/route.ts
-
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
+import { writeFile } from "fs/promises";
+import { join } from "path";
 
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  // Await the params before using its properties
-  const { id } = await params;
+export async function PUT(request: Request, context: { params: Promise< { id: string } >}) {
+  const { id } = await context.params;
+  
   try {
-    const deletedItem = await db.item.delete({
-      where: { id: Number(id) },
-    });
-    return NextResponse.json(deletedItem);
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
-  }
-}
+    const formData = await request.formData();
+    
+    // Extract form data
+    const barcode = formData.get("barcode") as string;
+    const title = formData.get("title") as string;
+    const note = formData.get("note") as string;
+    const price = parseFloat(formData.get("price") as string);
+    const inventory = formData.get("inventory") as string;
+    const taxIncluded = formData.get("taxIncluded") === "true";
+    const quickItem = formData.get("quickItem") === "true";
+    const imageFile = formData.get("image") as File | null;
+    const imageName = formData.get("imageName") as string | null;
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  const data = await request.json();
-  const { barcode, title, note, price, inventory } = data;
-  try {
+    // Handle file upload
+    let imageUrl: string | undefined;
+    if (imageFile && imageName) {
+      const bytes = await imageFile.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      
+      // Define upload path
+      const uploadDir = join(process.cwd(), "public/uploads");
+      const filename = imageName;
+      const filePath = join(uploadDir, filename);
+      
+      // Write file to filesystem
+      await writeFile(filePath, buffer);
+      imageUrl = `/uploads/${filename}`;
+    }
+
     const updatedItem = await db.item.update({
       where: { id: Number(id) },
       data: {
         barcode,
         title,
         note,
-        price: parseFloat(price),
-        // If inventory is provided, update it; otherwise, set it to undefined.
-        inventory: inventory ? parseInt(inventory, 10) : undefined,
+        price,
+        taxIncluded,
+        quickItem,
+        inventory: inventory ? parseInt(inventory) : null,
+        imageUrl: imageUrl || undefined,
       },
     });
+
     return NextResponse.json(updatedItem);
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

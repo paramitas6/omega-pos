@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   Popover,
@@ -15,7 +16,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import Image from "next/image";
-
+import CatChase from "@/components/CatChase";
 interface CartItem {
   id: string;
   title: string;
@@ -32,6 +33,7 @@ interface Item {
   price: number;
   inventory?: number;
   quickItem: boolean;
+  taxIncluded: boolean;
   imageUrl?: string;
 }
 
@@ -43,6 +45,7 @@ const TransactionSchema = z
           id: z.string(),
           title: z.string(),
           price: z.number().positive(),
+          taxIncluded: z.boolean().optional(),
           quantity: z.number().int().positive(),
         })
       )
@@ -73,15 +76,17 @@ export default function Cashier() {
   const [suggestions, setSuggestions] = useState<Item[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [openCustomItem, setOpenCustomItem] = useState(false);
-  const [customTitle, setCustomTitle] = useState("");
-  const [customPrice, setCustomPrice] = useState("");
+
   const [quickAddItems, setQuickAddItems] = useState<Item[]>([]);
   const [showCashPopup, setShowCashPopup] = useState(false);
   const [cashReceived, setCashReceived] = useState("");
   const [cashChange, setCashChange] = useState(0);
-  const [openTaxIncludedItem, setOpenTaxIncludedItem] = useState(false);
-  const [taxIncludedTitle, setTaxIncludedTitle] = useState("");
-  const [taxIncludedPrice, setTaxIncludedPrice] = useState("");
+  const [newItem, setNewItem] = useState({
+    title: "",
+    price: "",
+    taxIncluded: false,
+  });
+
   const taxRate = 0.13;
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -163,6 +168,7 @@ export default function Cashier() {
             price: item.price,
             quantity: 1,
             barcode: item.barcode,
+            taxIncluded: item.taxIncluded,
           },
         ];
       }
@@ -188,12 +194,18 @@ export default function Cashier() {
   };
 
   // Handler for adding quick add items
+  // Handler for adding quick add items
   const handleQuickAdd = (item: Item) => {
     setCart((prevCart) => {
       const existing = prevCart.find((i) => i.id === item.id.toString());
       if (existing) {
         return prevCart.map((i) =>
-          i.id === item.id.toString() ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id.toString()
+            ? {
+                ...i,
+                quantity: i.quantity + 1,
+              }
+            : i
         );
       } else {
         return [
@@ -204,6 +216,7 @@ export default function Cashier() {
             price: item.price,
             quantity: 1,
             barcode: item.barcode,
+            taxIncluded: item.taxIncluded, // Add this line
           },
         ];
       }
@@ -216,56 +229,29 @@ export default function Cashier() {
 
   // Handler for adding a custom (flex-priced) item
   const handleAddCustomItem = () => {
-    if (!customTitle || !customPrice) {
-      toast.error("Missing Information. Please fill in both title and price");
+    if (!newItem.title || !newItem.price) {
+      toast.error("Please fill in both title and price");
       return;
     }
 
-    const price = parseFloat(customPrice);
+    const price = parseFloat(newItem.price);
     if (isNaN(price) || price < 0) {
-      toast.error("Invalid Price. Please enter a valid positive number");
+      toast.error("Invalid price - must be a positive number");
       return;
     }
 
     const customItem: CartItem = {
       id: `custom-${Date.now()}`,
-      title: customTitle,
+      title: newItem.title,
       price: price,
       quantity: 1,
+      taxIncluded: newItem.taxIncluded,
     };
-    setCart((prevCart) => [...prevCart, customItem]);
 
-    toast(`${customTitle} ($${price.toFixed(2)}) added to cart`);
-
-    setCustomTitle("");
-    setCustomPrice("");
+    setCart((prev) => [...prev, customItem]);
+    setNewItem({ title: "", price: "", taxIncluded: false });
     setOpenCustomItem(false);
-  };
-
-  const handleAddTaxIncludedItem = () => {
-    if (!taxIncludedTitle || !taxIncludedPrice) {
-      toast.error("Please fill in both title and price");
-      return;
-    }
-    const price = parseFloat(taxIncludedPrice);
-    if (isNaN(price)) {
-      toast.error("Invalid price");
-      return;
-    }
-    setCart((prev) => [
-      ...prev,
-      {
-        id: `tax-included-${Date.now()}`,
-        title: taxIncludedTitle,
-        price,
-        quantity: 1,
-        taxIncluded: true,
-      },
-    ]);
-    setTaxIncludedTitle("");
-    setTaxIncludedPrice("");
-    setOpenTaxIncludedItem(false);
-    toast.success("Tax-included item added");
+    toast.success("Item added to cart");
   };
 
   const subtotal = cart.reduce(
@@ -382,7 +368,7 @@ export default function Cashier() {
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             placeholder="Scan barcode or search item..."
-            className="w-full p-4 text-lg border-2 border-slate-300 rounded-xl focus:outline-none focus:border-blue-300 bg-white"
+            className="w-full p-4 text-4xl border-2 border-slate-300 rounded-xl focus:outline-none focus:border-blue-300 bg-white"
           />
           {suggestions.length > 0 && (
             <ul className="absolute z-20 w-full mt-2 bg-white rounded-lg shadow-lg border border-slate-200">
@@ -513,7 +499,9 @@ export default function Cashier() {
 
       {/* Cash Payment Popover */}
       <Popover open={showCashPopup} onOpenChange={setShowCashPopup}>
-        <PopoverContent className="fixed z-50 transform translate-x-40 translate-y-40 w-96 bg-white p-6 rounded-xl shadow-lg">
+ 
+        <PopoverContent className="fixed z-50 transform translate-x-40 translate-y-40 w-96 bg-white p-8 rounded-xl shadow-lg text-2xl">
+
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Cash Payment</h3>
             <div className="space-y-2">
@@ -611,104 +599,92 @@ export default function Cashier() {
               </button>
             ))}
           </div>
-          {/* Custom Item Button with Centered Popover */}
           <Popover open={openCustomItem} onOpenChange={setOpenCustomItem}>
             <PopoverTrigger asChild>
-              <button className="w-full p-4 text-center rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors border-2 border-purple-100">
-                <div className="font-medium text-xl text-purple-800">
+              <button className="w-full p-6 text-center rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors border-2 border-purple-100">
+                <div className="font-medium text-2xl text-purple-800">
                   Add Custom Item
                 </div>
-                <div className="text-sm text-purple-600">Flexible pricing</div>
+                <div className="text-lg text-purple-600">
+                  Flexible pricing/tax options
+                </div>
               </button>
             </PopoverTrigger>
-            <PopoverContent className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 space-y-4">
-              <div className="space-y-2">
-                <h3 className="font-medium text-lg">Custom Item</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="title">Item Title</Label>
+            <PopoverContent className="fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] space-y-6 p-8">
+              <h3 className="font-bold text-3xl mb-6 text-purple-800">
+                Add Custom Item
+              </h3>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <Label htmlFor="title" className="text-2xl">
+                    Item Title
+                  </Label>
                   <Input
                     id="title"
-                    value={customTitle}
-                    onChange={(e) => setCustomTitle(e.target.value)}
-                    placeholder="Item name"
+                    value={newItem.title}
+                    onChange={(e) =>
+                      setNewItem((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    placeholder="Enter item name"
+                    className="text-2xl p-6 h-16 rounded-xl"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price</Label>
+
+                <div className="space-y-4">
+                  <Label htmlFor="price" className="text-2xl">
+                    Price
+                  </Label>
                   <Input
                     id="price"
                     type="number"
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
+                    value={newItem.price}
+                    onChange={(e) =>
+                      setNewItem((prev) => ({ ...prev, price: e.target.value }))
+                    }
                     placeholder="0.00"
                     step="0.01"
+                    className="text-2xl p-6 h-16 rounded-xl"
                   />
                 </div>
-                <div className="flex gap-2 pt-4">
+
+                <div className="flex items-center space-x-4 pt-4">
+                  <Checkbox
+                    id="taxIncluded"
+                    checked={newItem.taxIncluded}
+                    onCheckedChange={(checked) =>
+                      setNewItem((prev) => ({
+                        ...prev,
+                        taxIncluded: !!checked,
+                      }))
+                    }
+                    className="w-8 h-8"
+                  />
+                  <Label htmlFor="taxIncluded" className="text-2xl">
+                    Price includes tax
+                  </Label>
+                </div>
+
+                <div className="flex gap-4 pt-6">
                   <Button
                     variant="outline"
                     onClick={() => setOpenCustomItem(false)}
+                    className="text-xl px-8 py-6 rounded-xl"
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleAddCustomItem}>Add Item</Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-
-
-          {/* Tax-Included Item Button */}
-          <Popover
-            open={openTaxIncludedItem}
-            onOpenChange={setOpenTaxIncludedItem}
-          >
-            <PopoverTrigger asChild>
-              <button className="w-full p-4 text-center rounded-xl bg-orange-50 hover:bg-orange-100 transition-colors border-2 border-orange-100">
-                <div className="font-medium text-xl text-orange-800">
-                  Add No Tax Item
-                </div>
-                <div className="text-sm text-orange-600">
-                  Price includes or exempts tax
-                </div>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="w-96 space-y-4">
-              <div className="space-y-2">
-                <h3 className="font-medium text-lg">No Tax Item</h3>
-                <div className="space-y-2">
-                  <Label>Item Title</Label>
-                  <Input
-                    value={taxIncludedTitle}
-                    onChange={(e) => setTaxIncludedTitle(e.target.value)}
-                    placeholder="Item name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Price</Label>
-                  <Input
-                    type="number"
-                    value={taxIncludedPrice}
-                    onChange={(e) => setTaxIncludedPrice(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                  />
-                </div>
-                <div className="flex gap-2 pt-4">
                   <Button
-                    variant="outline"
-                    onClick={() => setOpenTaxIncludedItem(false)}
+                    onClick={handleAddCustomItem}
+                    className="text-xl px-8 py-6 rounded-xl bg-purple-600 hover:bg-purple-700"
                   >
-                    Cancel
+                    Add Item
                   </Button>
-                  <Button onClick={handleAddTaxIncludedItem}>Add Item</Button>
                 </div>
               </div>
             </PopoverContent>
           </Popover>
-                    {/* Add Cash Drawer Button Here */}
-                    <button
+
+          {/* Add Cash Drawer Button Here */}
+          <button
             onClick={handleOpenCashDrawer}
             className="w-full p-4 text-center rounded-xl bg-blue-50 hover:bg-blue-100 transition-colors border-2 border-blue-100"
           >
@@ -719,6 +695,12 @@ export default function Cashier() {
           </button>
         </div>
       </div>
+      <CatChase
+        imageSrc="/cat/cat5.png"
+        size={128}
+        stalkSpeed={0.05}
+        fleeSpeed={0.3}
+      />
     </div>
   );
 }

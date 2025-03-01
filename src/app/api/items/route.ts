@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const quickItem = formData.get("quickItem") === "true";
     const imageFile = formData.get("image") as File | null;
     const imageName = formData.get("imageName") as string | null;
+    const taxIncluded = formData.get("taxIncluded") === "true";
 
     // Handle file upload
     let imageUrl: string | undefined;
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
         inventory,
         quickItem,
         imageUrl,
+        taxIncluded,
       },
     });
 

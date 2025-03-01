@@ -36,7 +36,9 @@ yarn-error.log*
 /prisma/dev.db      # SQLite development database (if using SQLite)
 /prisma/dev.db-journal  # SQLite journal file
 /prisma/migrations  # Ignore generated migration files unless needed
+/prisma/1.db 
 
+/public/uploads/
 # Vercel
 .vercel
 

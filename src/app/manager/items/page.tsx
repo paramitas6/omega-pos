@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Item } from "@prisma/client";
 import { Trash2, Edit, CheckCircle, ImageOff } from "lucide-react";
 import Image from "next/image";
+import CatAnimation from "@/components/CatAnimation";
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -29,8 +30,9 @@ export default function ItemsPage() {
 
   return (
     <div className="p-6 bg-slate-50 min-h-screen">
+      <CatAnimation imageSrc="/cat/cat5.png" size={200} chaseSpeed={0.1} />
+      
       <div className="max-w-6xl mx-auto">
-
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-slate-800">Manage Items</h1>
           <Link href="/manager/items/add">
@@ -57,8 +59,12 @@ export default function ItemsPage() {
                   <th className="px-6 py-4 text-left text-slate-600 font-semibold">
                     Price
                   </th>
+                  {/* Add Tax Status column */}
                   <th className="px-6 py-4 text-left text-slate-600 font-semibold">
                     Inventory
+                  </th>
+                  <th className="px-6 py-4 text-left text-slate-600 font-semibold">
+                    Tax Included
                   </th>
                   <th className="px-6 py-4 text-left text-slate-600 font-semibold">
                     Quick Add
@@ -117,6 +123,14 @@ export default function ItemsPage() {
                         {item.inventory !== undefined ? item.inventory : "N/A"}
                       </span>
                     </td>
+                    <td className="px-6 py-4">
+                      {item.taxIncluded ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <span className="text-slate-400">—</span>
+                      )}
+                    </td>
+
                     <td className="px-6 py-4">
                       {item.quickItem ? (
                         <CheckCircle className="w-5 h-5 text-green-500" />

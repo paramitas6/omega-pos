@@ -15,6 +15,7 @@ export default function AddNewItem() {
     note: "",
     price: "",
     inventory: "",
+    taxIncluded: false,
     quickItem: false,
   });
   const [image, setImage] = useState<File | null>(null);
@@ -22,9 +23,11 @@ export default function AddNewItem() {
   const [preview, setPreview] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,7 +60,7 @@ export default function AddNewItem() {
       });
 
       if (!res.ok) throw new Error(await res.text());
-      
+
       router.push("/manager/items");
       toast.success("Item added successfully!");
     } catch (error) {
@@ -72,7 +75,7 @@ export default function AddNewItem() {
     <div className="p-6 bg-slate-50 min-h-screen">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-slate-200 p-8">
         <h1 className="text-3xl font-bold text-slate-800 mb-8">Add New Item</h1>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-2 gap-6">
             {/* Image Upload */}
@@ -85,6 +88,7 @@ export default function AddNewItem() {
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
+                  capture="environment"
                   className="hidden"
                   id="imageUpload"
                 />
@@ -103,7 +107,9 @@ export default function AddNewItem() {
                   ) : (
                     <div className="text-center">
                       <ImageOff className="w-8 h-8 text-slate-400 mb-2 mx-auto" />
-                      <span className="text-sm text-slate-500">Upload Image</span>
+                      <span className="text-sm text-slate-500">
+                        Upload Image
+                      </span>
                     </div>
                   )}
                 </label>
@@ -180,8 +186,30 @@ export default function AddNewItem() {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
+                  checked={formData.taxIncluded}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      taxIncluded: e.target.checked,
+                    }))
+                  }
+                  className="w-5 h-5 border-2 border-slate-300 rounded focus:ring-blue-400"
+                />
+                <label className="text-sm text-slate-700">
+                  Tax Included (price already contains tax)
+                </label>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
                   checked={formData.quickItem}
-                  onChange={(e) => setFormData(prev => ({ ...prev, quickItem: e.target.checked }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quickItem: e.target.checked,
+                    }))
+                  }
                   className="w-5 h-5 border-2 border-slate-300 rounded focus:ring-blue-400"
                 />
                 <label className="text-sm text-slate-700">
@@ -199,7 +227,7 @@ export default function AddNewItem() {
             {isUploading ? (
               <Loader2 className="w-5 h-5 animate-spin mx-auto" />
             ) : (
-              'Add Item'
+              "Add Item"
             )}
           </button>
         </form>
