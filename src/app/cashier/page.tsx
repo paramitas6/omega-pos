@@ -125,29 +125,60 @@ export default function Cashier() {
       setSuggestions([]);
       return;
     }
+  
     const fetchSuggestions = async () => {
       try {
         const res = await fetch(`/api/items?search=${barcode}`);
         if (res.ok) {
           const data: Item[] = await res.json();
-          setSuggestions(data);
-          // If there's an exact match, auto-add to cart
-          const exactMatch = data.find((item) => item.barcode === barcode);
-          if (exactMatch) {
-            addItemToCart(exactMatch);
+  
+          // 1. Check for exact barcode match first
+          const exactMatchByBarcode = data.find((item) => item.barcode === barcode);
+          if (exactMatchByBarcode) {
+            addItemToCart(exactMatchByBarcode);
             setBarcode("");
             setSuggestions([]);
+            return;
           }
+  
+          // 2. Check for valid price format (xx.xx)
+          const isPrice = /^\d+\.\d{2}$/.test(barcode);
+          if (isPrice) {
+            const price = parseFloat(barcode);
+            const newItem: CartItem = {
+              id: `price-${Date.now()}`,
+              title: `Item (HST Applicable)- $${price.toFixed(2)}`,
+              price: price,
+              quantity: 1,
+              taxIncluded: false,
+            };
+            setCart((prev) => [...prev, newItem]);
+            setBarcode("");
+            setSuggestions([]);
+            return;
+          }
+  
+          // 3. Show autocomplete suggestions if no matches
+          const searchTerm = barcode.toLowerCase();
+          const filteredSuggestions = data
+            .filter((item) => {
+              const matchesBarcode = item.barcode?.toLowerCase().includes(searchTerm);
+              const matchesName = item.title.toLowerCase().includes(searchTerm);
+              return matchesBarcode || matchesName;
+            })
+            .slice(0, 5);
+  
+          setSuggestions(filteredSuggestions);
         }
       } catch (error) {
         console.error("Error fetching suggestions", error);
       }
     };
-
+  
     const timeout = setTimeout(() => {
       fetchSuggestions();
     }, 300);
-
+  
     return () => clearTimeout(timeout);
   }, [barcode]);
 
@@ -383,8 +414,8 @@ export default function Cashier() {
                   }}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700">{item.title}</span>
-                    <span className="text-sm text-slate-500">
+                    <span className="text-slate-700 text-3xl">{item.title}</span>
+                    <span className="text-xl text-slate-500">
                       ${item.price.toFixed(2)}
                     </span>
                   </div>
@@ -555,12 +586,10 @@ export default function Cashier() {
       {/* Quick Add Sidebar */}
 
       <div className="flex flex-col w-[40%] border-l border-slate-200 p-6 bg-white">
-        <h2 className="text-2xl text-center font-semibold text-slate-800 mb-6">
-          Quick Add
-        </h2>
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
+
+        <div className="space-y-3 ">
+          <div className="grid grid-cols-5 gap-2">
             {quickAddItems.map((item) => (
               <button
                 key={item.id}

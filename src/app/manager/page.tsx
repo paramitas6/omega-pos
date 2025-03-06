@@ -1,8 +1,4 @@
 // src/app/manager/page.tsx
-"use client";
-
-// Add this import at the very top
-import { useEffect, useRef, useState } from "react";
 
 import {
   Package,
@@ -15,64 +11,7 @@ import {
 import Image from "next/image";
 
 export default function ManagerDashboard() {
-  const catRef = useRef<HTMLDivElement>(null);
-  const [isPawing, setIsPawing] = useState(false);
 
-  useEffect(() => {
-    let animationFrameId: number;
-    const lerp = (start: number, end: number, t: number) =>
-      start * (1 - t) + end * t;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!catRef.current) return;
-
-      // Get cursor position relative to viewport
-      const mouseX = e.clientX;
-      const mouseY = e.clientY;
-
-      // Get current cat position
-      const catRect = catRef.current.getBoundingClientRect();
-      const currentX = catRect.left + catRect.width / 2;
-      const currentY = catRect.top + catRect.height / 2;
-
-      // Calculate direction and distance
-      const dx = mouseX - currentX;
-      const dy = mouseY - currentY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      // Smooth movement using requestAnimationFrame
-      const animate = () => {
-        if (!catRef.current) return;
-
-        // Calculate new position with easing
-        const newX = lerp(currentX, mouseX, 0.1);
-        const newY = lerp(currentY, mouseY, 0.1);
-
-        // Apply new position (centered on cursor)
-        catRef.current.style.left = `${newX - catRect.width / 2}px`;
-        catRef.current.style.top = `${newY - catRect.height / 2}px`;
-
-        // Calculate rotation
-        const angle = Math.atan2(dy, dx);
-        catRef.current.style.transform = `rotate(${angle + Math.PI / 2}rad) 
-          scale(${1 - Math.min(distance / 500, 0.2)})`;
-
-        // Trigger paw animation
-        if (distance < 100 && !isPawing) {
-          setIsPawing(true);
-          setTimeout(() => setIsPawing(false), 300);
-        }
-      };
-
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [isPawing]);
 
   return (
     <div className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen overflow-hidden">
@@ -157,25 +96,7 @@ export default function ManagerDashboard() {
               <ArrowRight className="w-8 h-8 group-hover:rotate-45 transition-transform" />
             </a>
           </div>
-          <div
-            ref={catRef}
-            className="fixed w-48 h-48 z-20 transition-all duration-300 ease-out cursor-pointer"
-            style={{
-              transformOrigin: "center",
-              left: "50%",
-              top: "50%",
-            }}
-          >
-            <Image
-              src="/cat/cat5.png"
-              alt="Chasing cat"
-              width={192}
-              height={192}
-              className={`object-cover transition-transform duration-200 ${
-                isPawing ? "animate-paw" : ""
-              }`}
-            />
-          </div>
+
 
           {/* Stats Card */}
           <div

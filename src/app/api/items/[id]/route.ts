@@ -57,3 +57,17 @@ export async function PUT(request: Request, context: { params: Promise< { id: st
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
+export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
+
+  try {
+    await db.item.delete({
+      where: { id: Number(id) },
+    });
+
+    return NextResponse.json({ message: "Item deleted successfully" });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
