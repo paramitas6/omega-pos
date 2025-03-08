@@ -16,7 +16,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import Image from "next/image";
-import CatChase from "@/components/CatChase";
 interface CartItem {
   id: string;
   title: string;
@@ -89,7 +88,18 @@ export default function Cashier() {
 
   const taxRate = 0.13;
 
-  const wsRef = useRef<WebSocket | null>(null);
+  const wsRef = useRef<WebSocket | null>(null); // Add a ref for the input element
+  const barcodeInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle blur events to maintain focus
+  const handleBarcodeBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (!showCashPopup && !openCustomItem) {
+      // Use setTimeout to prevent immediate focus during click events
+      setTimeout(() => {
+        e.target.focus();
+      }, 0);
+    }
+  };
 
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:7071/api/ws");
@@ -99,6 +109,13 @@ export default function Cashier() {
     ws.onclose = () => console.log("WebSocket closed (Cashier)");
     return () => ws.close();
   }, []);
+
+  // Effect to manage focus state
+  useEffect(() => {
+    if (!showCashPopup && !openCustomItem) {
+      barcodeInputRef.current?.focus();
+    }
+  }, [showCashPopup, openCustomItem, cart]); // Re-focus when these states change
 
   useEffect(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -125,22 +142,24 @@ export default function Cashier() {
       setSuggestions([]);
       return;
     }
-  
+
     const fetchSuggestions = async () => {
       try {
         const res = await fetch(`/api/items?search=${barcode}`);
         if (res.ok) {
           const data: Item[] = await res.json();
-  
+
           // 1. Check for exact barcode match first
-          const exactMatchByBarcode = data.find((item) => item.barcode === barcode);
+          const exactMatchByBarcode = data.find(
+            (item) => item.barcode === barcode
+          );
           if (exactMatchByBarcode) {
             addItemToCart(exactMatchByBarcode);
             setBarcode("");
             setSuggestions([]);
             return;
           }
-  
+
           // 2. Check for valid price format (xx.xx)
           const isPrice = /^\d+\.\d{2}$/.test(barcode);
           if (isPrice) {
@@ -157,28 +176,30 @@ export default function Cashier() {
             setSuggestions([]);
             return;
           }
-  
+
           // 3. Show autocomplete suggestions if no matches
           const searchTerm = barcode.toLowerCase();
           const filteredSuggestions = data
             .filter((item) => {
-              const matchesBarcode = item.barcode?.toLowerCase().includes(searchTerm);
+              const matchesBarcode = item.barcode
+                ?.toLowerCase()
+                .includes(searchTerm);
               const matchesName = item.title.toLowerCase().includes(searchTerm);
               return matchesBarcode || matchesName;
             })
             .slice(0, 5);
-  
+
           setSuggestions(filteredSuggestions);
         }
       } catch (error) {
         console.error("Error fetching suggestions", error);
       }
     };
-  
+
     const timeout = setTimeout(() => {
       fetchSuggestions();
     }, 300);
-  
+
     return () => clearTimeout(timeout);
   }, [barcode]);
 
@@ -394,10 +415,13 @@ export default function Cashier() {
 
         {/* Barcode Input */}
         <div className="mb-6 relative">
+
           <input
+            ref={barcodeInputRef}
             type="text"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
+            onBlur={handleBarcodeBlur}
             placeholder="Scan barcode or search item..."
             className="w-full p-4 text-4xl border-2 border-slate-300 rounded-xl focus:outline-none focus:border-blue-300 bg-white"
           />
@@ -414,7 +438,9 @@ export default function Cashier() {
                   }}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700 text-3xl">{item.title}</span>
+                    <span className="text-slate-700 text-3xl">
+                      {item.title}
+                    </span>
                     <span className="text-xl text-slate-500">
                       ${item.price.toFixed(2)}
                     </span>
@@ -530,9 +556,7 @@ export default function Cashier() {
 
       {/* Cash Payment Popover */}
       <Popover open={showCashPopup} onOpenChange={setShowCashPopup}>
- 
         <PopoverContent className="fixed z-50 transform translate-x-40 translate-y-40 w-96 bg-white p-8 rounded-xl shadow-lg text-2xl">
-
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Cash Payment</h3>
             <div className="space-y-2">
@@ -586,8 +610,6 @@ export default function Cashier() {
       {/* Quick Add Sidebar */}
 
       <div className="flex flex-col w-[40%] border-l border-slate-200 p-6 bg-white">
-
-
         <div className="space-y-3 ">
           <div className="grid grid-cols-5 gap-2">
             {quickAddItems.map((item) => (
@@ -724,12 +746,6 @@ export default function Cashier() {
           </button>
         </div>
       </div>
-      <CatChase
-        imageSrc="/cat/cat5.png"
-        size={128}
-        stalkSpeed={0.05}
-        fleeSpeed={0.3}
-      />
     </div>
   );
 }

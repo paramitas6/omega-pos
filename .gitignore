@@ -42,6 +42,11 @@ yarn-error.log*
 # Vercel
 .vercel
 
+#
+/ticket-printer/
+ticket-printer/
+
+pos-server/node_modules/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts

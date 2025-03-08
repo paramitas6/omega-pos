@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "cd server && npm install",
+    "install:all": "npm install && cd server && npm install"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

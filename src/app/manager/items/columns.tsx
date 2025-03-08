@@ -132,7 +132,7 @@ export const columns: ColumnDef<Item>[] = [
           >
             <Edit className="w-5 h-5 text-slate-600" />
           </Link>
-          <button
+          <Button
             onClick={async () => {
               if (
                 confirm("Are you sure you want to delete this item?")
@@ -147,7 +147,7 @@ export const columns: ColumnDef<Item>[] = [
             className="p-2 hover:bg-red-50 rounded-lg transition-colors"
           >
             <Trash2 className="w-5 h-5 text-red-500" />
-          </button>
+          </Button>
         </div>
       );
     },
